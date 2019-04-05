@@ -10,7 +10,7 @@ Features
 --------
 
 * Read/write lock.
-* Include a lock pool that you can acquire multiple keys at once.
+* Include a lock pool which can acquire multiple keys at once.
 * No `process.nextTick`. Built with Promise.
 * The pending queue is implemented with a linked list.
 * Support promise while it is allowed to use a `done` callback.
@@ -174,7 +174,7 @@ Grant access to multiple `scopes`, wait until the writer get called, and return 
 Similar projects
 ----------------
 
-There are a lot of other implementation on npm:
+There are a lot of other implementations on npm:
 
 * [read-write-lock](https://github.com/TehShrike/read-write-lock) - simple read/write lock built with [mutexify](https://www.npmjs.com/package/mutexify) which uses `process.nextTick`.
 * [node-memory-lock](https://github.com/danielgindi/node-memory-lock) - support priority/upgrade/downgrade/timeout.
