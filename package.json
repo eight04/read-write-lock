@@ -1,0 +1,38 @@
+{
+  "name": "@eight04/read-write-lock",
+  "version": "0.0.0",
+  "description": "A browser-friendly read/write lock.",
+  "keywords": [
+    "lock",
+    "mutex",
+    "async",
+    "promise"
+  ],
+  "repository": "eight04/read-write-lock",
+  "author": "eight04 <eight04@gmail.com> (https://github.com/eight04)",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "browser": "index.js",
+  "dependencies": {},
+  "scripts": {
+    "lint": "eslint \"**/*.js\" --cache",
+    "test": "npm run lint && c8 --reporter=html mocha",
+    "preversion": "npm test",
+    "version": "npm run build && git add .",
+    "build": "rollup -c",
+    "postversion": "git push --follow-tags && npm publish --access public"
+  },
+  "devDependencies": {
+    "c8": "^3.4.0",
+    "eslint": "^5.5.0",
+    "mocha": "^6.0.2",
+    "rollup": "^1.8.0",
+    "rollup-plugin-cjs-es": "^0.7.0",
+    "rollup-plugin-terser": "^4.0.4"
+  },
+  "eslintIgnore": [
+    "dist"
+  ]
+}
