@@ -84,10 +84,14 @@ function createLock({maxActiveReader = Infinity} = {}) {
         task.q.resolve(result);
       }
       if (!task.q2) {
+        // it's a sync function and you don't want to release it manually, why
+        // do you need a lock?
         onDone();
         return;
+      } else if (err) {
+        // auto release with sync error
+        task.q2.resolve();
       }
-      task.q2.resolve();
     }
     deque();
     function onDone() {

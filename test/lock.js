@@ -5,7 +5,7 @@ const {createLock} = require("..");
 const {delay} = require("./util");
 
 describe("lock", () => {
-  it("read", async () => {
+  it("read should run parallel", async () => {
     const lock = createLock();
     const q = [];
     await Promise.all([
@@ -21,7 +21,7 @@ describe("lock", () => {
     assert.deepStrictEqual(q, [1, 3, 2]);
   });
   
-  it("write", async () => {
+  it("write should block", async () => {
     const lock = createLock();
     const q = [];
     await Promise.all([
@@ -37,12 +37,46 @@ describe("lock", () => {
     assert.deepStrictEqual(q, [1, 2, 3]);
   });
   
+  it("write should block read", async () => {
+    const lock = createLock();
+    const q = [];
+    await Promise.all([
+      lock.write(async () => {
+        q.push(1);
+        await delay(100);
+        q.push(2);
+      }),
+      lock.read(() => {
+        q.push(3);
+      })
+    ]);
+    assert.deepStrictEqual(q, [1, 2, 3]);
+  });
+  
+  it("read should block write", async () => {
+    const lock = createLock();
+    const q = [];
+    await Promise.all([
+      lock.read(async () => {
+        q.push(1);
+        await delay(100);
+        q.push(2);
+      }),
+      lock.write(() => {
+        q.push(3);
+      })
+    ]);
+    assert.deepStrictEqual(q, [1, 2, 3]);
+  });
+  
   it("manually release late", async () => {
     const lock = createLock();
     const q = [];
-    const p1 = lock.read(async release => {
+    const p1 = lock.read(release => {
       q.push(1);
-      setTimeout(release, 100);
+      setTimeout(() => {
+        release();
+      }, 100);
     });
     const p2 = lock.read(() => {
       q.push(2);
