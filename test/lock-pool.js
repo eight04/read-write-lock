@@ -18,6 +18,7 @@ describe("lock pool", () => {
     });
     await p;
     assert.deepStrictEqual(q, [1, 2, 3]);
+    assert.equal(locks.locks.size, 0);
   });
   
   it("write should not block if not overlay", async () => {
@@ -33,6 +34,7 @@ describe("lock pool", () => {
     });
     await p;
     assert.deepStrictEqual(q, [1, 3, 2]);
+    assert.equal(locks.locks.size, 0);
   });
   
   it("read should run parallel", async () => {
@@ -48,6 +50,7 @@ describe("lock pool", () => {
     });
     await p;
     assert.deepStrictEqual(q, [1, 3, 2]);
+    assert.equal(locks.locks.size, 0);
   });
   
   it("manually release", async () => {
@@ -65,6 +68,7 @@ describe("lock pool", () => {
     });
     await p;
     assert.deepStrictEqual(q, [1, 2, 3]);
+    assert.equal(locks.locks.size, 0);
   });
   
   it("release automatically if the callback throws", async () => {
@@ -80,5 +84,6 @@ describe("lock pool", () => {
     await p2;
     assert.deepStrictEqual(q, [1, 2]);
     await assert.rejects(p1);
+    assert.equal(locks.locks.size, 0);
   });
 });

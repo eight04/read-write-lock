@@ -2,10 +2,12 @@ function createLock({maxActiveReader = Infinity} = {}) {
   let firstTask;
   let lastTask;
   let activeReader = 0;
-  return {
+  const self = {
     read: fn => que(fn, false),
-    write: fn => que(fn, true)
+    write: fn => que(fn, true),
+    length: 0
   };
+  return self;
   
   function que(fn, block) {
     const task = createTask({fn, block});
@@ -19,6 +21,7 @@ function createLock({maxActiveReader = Infinity} = {}) {
         firstTask = lastTask;
       }
     }
+    self.length++;
     deque();
     return task.q.promise;
   }
@@ -68,7 +71,7 @@ function createLock({maxActiveReader = Infinity} = {}) {
       return;
     }
     if (task.q2) {
-      task.q2.promise.then(onDone);
+      task.q2.promise.then(_onDone);
     }
     if (result && result.then) {
       const pending = result.then(task.q.resolve, task.q.reject);
@@ -87,6 +90,10 @@ function createLock({maxActiveReader = Infinity} = {}) {
     deque();
     
     function onDone() {
+      _onDone();
+    }
+    
+    function _onDone(afterDone) {
       if (task.prev) {
         task.prev.next = task.next;
       }
@@ -99,6 +106,10 @@ function createLock({maxActiveReader = Infinity} = {}) {
       if (!task.block) {
         activeReader--;
       }
+      self.length--;
+      if (afterDone) {
+        afterDone();
+      }
       deque();
     }
   }
@@ -108,21 +119,31 @@ function createLockPool(options) {
   const locks = new Map; // scope -> lock
   return {
     read: (scope, fn) => op(scope, fn, "read"),
-    write: (scope, fn) => op(scope, fn, "write")
+    write: (scope, fn) => op(scope, fn, "write"),
+    locks
   };
   
-  async function op(scopes, fn, opType) {
+  async function op(scopeIter, fn, opType) {
     // FIXME: dead lock if there are duplicated scopes?
+    const scopes = [];
     const acquiring = [];
-    for (const scope of scopes) {
+    for (const scope of scopeIter) {
       let lock = locks.get(scope);
       if (!lock) {
         lock = createLock(options);
         locks.set(scope, lock);
       }
-      acquiring.push(lock[opType](release => release));
+      const o = {
+        lock,
+        scope,
+        relase: null
+      };
+      acquiring.push(lock[opType](release => {
+        o.release = release;
+      }));
+      scopes.push(o);
     }
-    const releasers = await Promise.all(acquiring);
+    await Promise.all(acquiring);
     let result;
     try {
       result = fn(fn.length && onDone);
@@ -142,10 +163,14 @@ function createLockPool(options) {
     return result;
     
     function onDone() {
-      for (const release of releasers) {
-        release();
+      for (const scope of scopes) {
+        scope.release(() => {
+          if (!scope.lock.length) {
+            locks.delete(scope.scope);
+          }
+        });
       }
-      releasers.length = 0;
+      scopes.length = 0;
     }
   }
 }
