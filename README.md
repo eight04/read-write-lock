@@ -111,6 +111,66 @@ This module exports two functions:
 * `createLock` - create a `lock` object that can be used to queue up async tasks.
 * `createLockPool` - create a lock pool that can queue up async tasks for different scopes.
 
+### createLock
+
+```js
+const lock = createLock({
+  maxActiveReader = Infinity
+} = {});
+```
+
+Create a read/write lock.
+
+`maxActiveReader` controls how many reader will run in parallel.
+
+### lock.read
+
+```js
+const callbackResult = await lock.read(callback: Function | AsyncFunction);
+```
+
+Register a reader callback, wait until the reader get called, and return the callback result.
+
+If `callback` accepts no argument, the lock will be released when the callback returns. Otherwise, callback accepts a `release` function that will release the lock when called.
+
+If `callback` is a sync function and it throws when called, the lock will be released immediately.
+
+### lock.write
+
+```js
+const callbackResult = await lock.write(callback: Function | AsyncFunction);
+```
+
+Register a writer callback, wait until the writer get called, and return the callback result.
+
+### createLockPool
+
+```js
+const pool = createLockPool(options?);
+```
+
+Create a lock pool. You can operate on multiple locks at once by specifying multiple scopes.
+
+`options` object will be sent to `createLock`.
+
+### pool.read
+
+```js
+const callbackResult = await pool.read(scopes: Iterable, callback: Function | AsyncFunction);
+```
+
+Grant access to multiple `scopes`, wait until the reader get called, and return the callback result.
+
+`scopes` may contain anything that can be used as the key of JavaScript `Map`.
+
+### pool.write
+
+```js
+const callbackResult = await pool.write(scopes: Iterable, callback: Function | AsyncFunction);
+```
+
+Grant access to multiple `scopes`, wait until the writer get called, and return the callback result.
+
 Similar projects
 ----------------
 
