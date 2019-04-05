@@ -75,19 +75,20 @@ describe("lock", () => {
     const p1 = lock.read(release => {
       q.push(1);
       setTimeout(() => {
+        q.push(2);
         release();
       }, 10);
     });
     const p2 = lock.read(() => {
-      q.push(2);
-    });
-    const p3 = lock.write(() => {
       q.push(3);
     });
+    const p3 = lock.write(() => {
+      q.push(4);
+    });
     await Promise.all([p1, p2]);
-    assert.deepStrictEqual(q, [1, 2]);
+    assert.deepStrictEqual(q, [1, 3]);
     await p3;
-    assert.deepStrictEqual(q, [1, 2, 3]);
+    assert.deepStrictEqual(q, [1, 3, 2, 4]);
   });
   
   it("manually release early", async () => {
