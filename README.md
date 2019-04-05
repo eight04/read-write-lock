@@ -126,6 +126,6 @@ There are a lot of other implementation on npm:
 Changelog
 ---------
 
-* 0.1.0 (next)
+* 0.1.0 (Apr 5, 2019)
 
   - First release.
