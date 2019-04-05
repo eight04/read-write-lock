@@ -2,15 +2,10 @@ function createLock({maxActiveReader = Infinity} = {}) {
   let firstTask;
   let lastTask;
   let activeReader = 0;
-  return {read, write};
-  
-  function read(fn) {
-    return que(fn, false);
-  }
-  
-  function write(fn) {
-    return que(fn, true);
-  }
+  return {
+    read: fn => que(fn, false),
+    write: fn => que(fn, true)
+  };
   
   function que(fn, block) {
     const task = createTask({fn, block});
@@ -63,11 +58,14 @@ function createLock({maxActiveReader = Infinity} = {}) {
     }
     firstTask = task.next;
     let result;
-    let err;
     try {
       result = task.fn(task.q2 && task.q2.resolve);
-    } catch (_err) {
-      err = _err;
+    } catch (err) {
+      task.q.reject(err);
+      // auto release with sync error
+      // q2 is useless in this case
+      onDone();
+      return;
     }
     if (task.q2) {
       task.q2.promise.then(onDone);
@@ -78,22 +76,16 @@ function createLock({maxActiveReader = Infinity} = {}) {
         pending.then(onDone);
       }
     } else {
-      if (err) {
-        task.q.reject(err);
-      } else {
-        task.q.resolve(result);
-      }
+      task.q.resolve(result);
       if (!task.q2) {
         // it's a sync function and you don't want to release it manually, why
         // do you need a lock?
         onDone();
         return;
-      } else if (err) {
-        // auto release with sync error
-        task.q2.resolve();
       }
     }
     deque();
+    
     function onDone() {
       if (task.prev) {
         task.prev.next = task.next;
@@ -112,6 +104,53 @@ function createLock({maxActiveReader = Infinity} = {}) {
   }
 }
 
+function createLockPool(options) {
+  const locks = new Map; // scope -> lock
+  return {
+    read: (scope, fn) => op(scope, fn, "read"),
+    write: (scope, fn) => op(scope, fn, "write")
+  };
+  
+  async function op(scopes, fn, opType) {
+    // FIXME: dead lock if there are duplicated scopes?
+    const acquiring = [];
+    for (const scope of scopes) {
+      let lock = locks.get(scope);
+      if (!lock) {
+        lock = createLock(options);
+        locks.set(scope, lock);
+      }
+      acquiring.push(lock[opType](release => release));
+    }
+    const releasers = await Promise.all(acquiring);
+    let result;
+    try {
+      result = fn(fn.length && onDone);
+    } catch (err) {
+      onDone();
+      throw err;
+    }
+    if (result && result.then) {
+      if (!fn.length) {
+        result.then(onDone, onDone);
+      }
+      return await result;
+    }
+    if (!fn.length) {
+      onDone();
+    }
+    return result;
+    
+    function onDone() {
+      for (const release of releasers) {
+        release();
+      }
+      releasers.length = 0;
+    }
+  }
+}
+
 module.exports = {
-  createLock
+  createLock,
+  createLockPool
 };
