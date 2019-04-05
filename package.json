@@ -1,6 +1,6 @@
 {
   "name": "@eight04/read-write-lock",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A browser-friendly read/write lock.",
   "keywords": [
     "lock",
