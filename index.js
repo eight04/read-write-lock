@@ -1,5 +1,5 @@
 function createLock({maxActiveReader = Infinity} = {}) {
-  let inactivefirstTask;
+  let firstInactiveTask;
   let lastTask;
   let activeReader = 0;
   const self = {
@@ -12,13 +12,13 @@ function createLock({maxActiveReader = Infinity} = {}) {
   function que(fn, block) {
     const task = createTask({fn, block});
     if (!lastTask) {
-      inactivefirstTask = lastTask = task;
+      firstInactiveTask = lastTask = task;
     } else {
       lastTask.next = task;
       task.prev = lastTask;
       lastTask = task;
-      if (!inactivefirstTask) {
-        inactivefirstTask = task;
+      if (!firstInactiveTask) {
+        firstInactiveTask = task;
       }
     }
     self.length++;
@@ -47,7 +47,7 @@ function createLock({maxActiveReader = Infinity} = {}) {
   }
   
   function deque() {
-    const task = inactivefirstTask;
+    const task = firstInactiveTask;
     if (
       !task ||
       task.block && task.prev ||
@@ -59,7 +59,7 @@ function createLock({maxActiveReader = Infinity} = {}) {
     if (!task.block) {
       activeReader++;
     }
-    inactivefirstTask = task.next;
+    firstInactiveTask = task.next;
     let result;
     try {
       result = task.fn(task.q2 && task.q2.resolve);
