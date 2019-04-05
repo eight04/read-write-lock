@@ -11,7 +11,7 @@ describe("lock", () => {
     await Promise.all([
       lock.read(async () => {
         q.push(1);
-        await delay(100);
+        await delay();
         q.push(2);
       }),
       lock.read(() => {
@@ -27,7 +27,7 @@ describe("lock", () => {
     await Promise.all([
       lock.write(async () => {
         q.push(1);
-        await delay(100);
+        await delay();
         q.push(2);
       }),
       lock.write(() => {
@@ -43,7 +43,7 @@ describe("lock", () => {
     await Promise.all([
       lock.write(async () => {
         q.push(1);
-        await delay(100);
+        await delay();
         q.push(2);
       }),
       lock.read(() => {
@@ -59,7 +59,7 @@ describe("lock", () => {
     await Promise.all([
       lock.read(async () => {
         q.push(1);
-        await delay(100);
+        await delay();
         q.push(2);
       }),
       lock.write(() => {
@@ -76,7 +76,7 @@ describe("lock", () => {
       q.push(1);
       setTimeout(() => {
         release();
-      }, 100);
+      }, 10);
     });
     const p2 = lock.read(() => {
       q.push(2);
@@ -98,7 +98,7 @@ describe("lock", () => {
         q.push(1);
         release();
         q.push(2);
-        await delay(100);
+        await delay();
         q.push(3);
       }),
       lock.write(() => {
@@ -108,7 +108,7 @@ describe("lock", () => {
     assert.deepStrictEqual(q, [1, 2, 4, 3]);
   });
   
-  it("sync error auto release", async () => {
+  it("auto release when callback throws", async () => {
     const lock = createLock();
     const p1 = assert.rejects(lock.read(release => { // eslint-disable-line no-unused-vars
       // auto release on sync error
@@ -118,13 +118,13 @@ describe("lock", () => {
     await p1;
   });
   
-  it("maxActiveReader", async () => {
+  it("maxActiveReader should throttle readers", async () => {
     const lock = createLock({maxActiveReader: 1});
     const q = [];
     await Promise.all([
       lock.read(async () => {
         q.push(1);
-        await delay(100);
+        await delay();
         q.push(2);
       }),
       lock.read(() => {

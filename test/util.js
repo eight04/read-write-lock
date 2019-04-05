@@ -1,4 +1,4 @@
-function delay(t) {
+function delay(t = 10) {
   return new Promise(resolve => setTimeout(resolve, t));
 }
 
